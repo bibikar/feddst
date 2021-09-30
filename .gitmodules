@@ -1,0 +1,3 @@
+[submodule "non_iid"]
+	path = non_iid
+	url = https://github.com/jeremy313/non-iid-dataset-for-personalized-federated-learning.git
