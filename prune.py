@@ -1059,7 +1059,9 @@ def global_unstructured(parameters, pruning_method, **kwargs):
         param_mask = final_mask[pointer : pointer + num_param].view_as(param)
         # Assign the correct pre-computed mask to each parameter and add it
         # to the forward_pre_hooks like any other pruning method
-        # Disgard the original cumstom_from_mask function. Instead, directly
+
+        # NOTE from Xiaohan:
+        # Disgard the original custom_from_mask function. Instead, directly
         #   modify the parameters to be pruned and register the buffer for 
         #   the pruning mask.
         # custom_from_mask(module, name, param_mask)

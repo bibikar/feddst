@@ -32,10 +32,14 @@ parser.add_argument('--eta', type=float, help='learning rate', default=0.01)
 parser.add_argument('--clients', type=int, help='number of clients per round', default=20)
 parser.add_argument('--rounds', type=int, help='number of global rounds', default=400)
 parser.add_argument('--epochs', type=int, help='number of local epochs', default=10)
-parser.add_argument('--dataset', type=str, choices=('mnist', 'emnist', 'cifar10'),
+parser.add_argument('--dataset', type=str, choices=('mnist', 'emnist', 'cifar10', 'cifar100'),
                     default='mnist', help='Dataset to use')
+parser.add_argument('--distribution', type=str, choices=('dirichlet', 'lotteryfl', 'iid'), default='dirichlet',
+                    help='how should the dataset be distributed?')
+parser.add_argument('--beta', type=float, default=0.1, help='Beta parameter (unbalance rate) for Dirichlet distribution')
 parser.add_argument('--total-clients', type=int, help='split the dataset between this many clients. Ignored for EMNIST.', default=400)
 parser.add_argument('--min-samples', type=int, default=0, help='minimum number of samples required to allow a client to participate')
+parser.add_argument('--samples-per-client', type=int, default=20, help='samples to allocate to each client (per class, for lotteryfl, or per client, for iid)')
 parser.add_argument('--prox', type=float, default=0, help='coefficient to proximal term (i.e. in FedProx)')
 
 # Pruning and regrowth options
@@ -147,9 +151,9 @@ else:
         pickle.dump(loaders, f)
 '''
 
-loaders = get_dataset(args.dataset, clients=args.total_clients,
-                      batch_size=args.batch_size, devices=cache_devices,
-                      min_samples=args.min_samples)
+loaders = get_dataset(args.dataset, clients=args.total_clients, mode=args.distribution,
+                      beta=args.beta, batch_size=args.batch_size, devices=cache_devices,
+                      min_samples=args.min_samples, samples=args.samples_per_client)
 
 class Client:
 
@@ -435,7 +439,7 @@ for server_round in tqdm(range(args.rounds)):
 
             cl_weight_params[name] = cl_param.to(device='cpu', copy=True)
             if args.fp16:
-                cl_weight_params[name] = cl_weight_params[name].to(torch.float16).to(torch.float)
+                cl_weight_params[name] = cl_weight_params[name].to(torch.bfloat16).to(torch.float)
 
         # at this point, we have weights and masks (possibly all-ones)
         # for this client. we will proceed by applying the mask and adding
